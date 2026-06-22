@@ -38,7 +38,7 @@ def chat(message: str, history: list[dict]) -> str:
 
 
 demo = gr.ChatInterface(
-    fn=chat, title="Hollow Knight Lore Bot (RAG, LangChain)"
+    fn=chat, title="Hollow Knight Lore Bot (RAG, LangChain)", type="messages"
 )
 
 if __name__ == "__main__":
