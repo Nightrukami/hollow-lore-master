@@ -1,3 +1,15 @@
+---
+title: Hollow Lore Master
+emoji: 🦋
+colorFrom: purple
+colorTo: blue
+sdk: gradio
+sdk_version: "5.29.0"
+python_version: "3.12"
+app_file: app.py
+pinned: false
+---
+
 # Lore Master (LangChain Edition)
 
 A **Hollow Knight lore Q&A bot** built with **LangChain**. It scrapes lore from
