@@ -1,5 +1,5 @@
 [project]
-name = "lore-master"
+name = "hollow-lore-master"
 version = "0.1.0"
 description = "Hollow Knight lore Q&A bot built with LangChain (LCEL chat + RAG)"
 readme = "README.md"
