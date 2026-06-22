@@ -23,9 +23,12 @@ from lore_master.rag_chat.rag_chain import build_rag_chain
 # เช็คว่ามี vector DB ไหม ถ้าไม่มีให้ fetch + ingest ใหม่
 if not os.path.exists("data/vector_db"):
     print("Building vector DB...")
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(SOURCE_DIR) + os.pathsep + env.get("PYTHONPATH", "")
     subprocess.run(
         [sys.executable, str(ROOT_DIR / "scripts" / "run_fetch_ingest.py")],
         check=True,
+        env=env,
     )
 chain = build_rag_chain()
 
