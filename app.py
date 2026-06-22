@@ -6,23 +6,29 @@ importable by default. This file fixes that by adding ``source/`` to ``sys.path`
 before importing, then launches the same Gradio UI as ``scripts/app_rag.py``.
 """
 
+import subprocess
 import sys
 import os
 from pathlib import Path
 
 # ให้ Python หา package lore_master ใน source/ เจอ โดยไม่ต้องติดตั้งแบบ editable
-SOURCE_DIR = Path(__file__).resolve().parent / "source"
+ROOT_DIR = Path(__file__).resolve().parent
+SOURCE_DIR = ROOT_DIR / "source"
 sys.path.insert(0, str(SOURCE_DIR))
 
 import gradio as gr
 
-from lore_master.rag_chat.rag_chain import build_rag_chain, ingest_documents
+from lore_master.rag_chat.rag_chain import build_rag_chain
 
-chain = build_rag_chain()
-# เช็คว่ามี vector DB ไหม ถ้าไม่มีให้ ingest ใหม่
+# เช็คว่ามี vector DB ไหม ถ้าไม่มีให้ fetch + ingest ใหม่
 if not os.path.exists("data/vector_db"):
     print("Building vector DB...")
-    ingest_documents()  # สร้าง DB ใหม่จากไฟล์ lore
+    subprocess.run(
+        [sys.executable, str(ROOT_DIR / "scripts" / "run_fetch_ingest.py")],
+        check=True,
+    )
+chain = build_rag_chain()
+
 
 def chat(message: str, history: list[dict]) -> str:
     return chain.invoke({"question": message, "history": history})
