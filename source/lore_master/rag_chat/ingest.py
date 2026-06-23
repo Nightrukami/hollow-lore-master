@@ -1,9 +1,9 @@
 import os
-import glob
+import hashlib
 from tqdm import tqdm
 from pathlib import Path
 from langchain_chroma import Chroma
-from langchain_community.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from lore_master.core.components import build_embeddings
@@ -15,14 +15,14 @@ DB_NAME = str(Path(__file__).resolve().parents[3] / s.persist_dir)
 KNOWLEDE_BASE = str(Path(__file__).resolve().parents[3] / s.knowlede_dir)
 
 def fetch_documents():
-    folders = glob.glob(str(Path(KNOWLEDE_BASE) / "*"))
-    documents =[]
-    for folder in folders:
-        doc_type = os.path.basename(folder)
-        loader = DirectoryLoader(folder, glob="**/*.md", loader_cls=TextLoader, 
-        loader_kwargs={"encoding": "utf-8"})
-        folder_docs = loader.load()
-        for doc in tqdm(folder_docs, desc="fetching documents" ):
+    base = Path(KNOWLEDE_BASE)
+    documents = []
+    # rglob walks every nested sub-category folder the crawler creates,
+    # not just the immediate children of the knowledge-base directory.
+    for md_path in tqdm(sorted(base.rglob("*.md")), desc="fetching documents"):
+        doc_type = md_path.relative_to(base).parts[0]
+        loader = TextLoader(str(md_path), encoding="utf-8")
+        for doc in loader.load():
             doc.metadata["doc_type"] = doc_type
             documents.append(doc)
     print("finished fetch doc")
@@ -34,15 +34,31 @@ def create_chunks(documents):
     print("finished chunks doc")
     return chunks
 
+def _stable_id(chunk) -> str:
+    """Deterministic chunk ID from its source file + exact text.
+
+    Chroma assigns a random UUID to every chunk when no ``ids`` are given,
+    so re-running ingest on unchanged content still produces a brand-new
+    set of record IDs each time. Hashing (source, text) instead means the
+    same chunk gets the same ID across runs, while content that actually
+    changed naturally gets a new ID.
+    """
+    source = chunk.metadata.get("source", "")
+    digest = hashlib.sha256(f"{source}::{chunk.page_content}".encode("utf-8"))
+    return digest.hexdigest()
+
 def create_embeddings(chunks):
+    ids = [_stable_id(chunk) for chunk in chunks]
+
     if os.path.exists(DB_NAME):
         Chroma(persist_directory=DB_NAME, embedding_function=build_embeddings()).delete_collection()
 
     vectorstore = Chroma.from_documents(
-        documents=chunks, 
-        embedding=build_embeddings(), 
+        documents=chunks,
+        embedding=build_embeddings(),
         persist_directory=DB_NAME,
-        collection_name=s.collection_name
+        collection_name=s.collection_name,
+        ids=ids,
     )
 
     collection = vectorstore._collection
