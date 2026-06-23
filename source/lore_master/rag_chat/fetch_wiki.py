@@ -63,11 +63,17 @@ def fetch_wiki(
     Returns the number of files saved.
     """
     s = get_settings()
-    for category in s.lore_categories:
-        folder = Path(KNOWLEDE_BASE) / _slugify(category)
+    for entry in s.lore_categories:
+        if entry.startswith("Category:"):
+            folder = Path(KNOWLEDE_BASE) / _slugify(entry)
+            titles = list_category_pages(entry)
+        else:
+            # Not a category - treat the entry as a single page title.
+            folder = Path(KNOWLEDE_BASE) / "General"
+            titles = [entry]
+
         folder.mkdir(parents=True, exist_ok=True)
 
-        titles = list_category_pages(category)
         saved = 0
         for title in tqdm(titles, desc="fetching wiki"):
             text, url = fetch_plaintext(title)
@@ -80,7 +86,7 @@ def fetch_wiki(
             )
             saved += 1
             time.sleep(delay)
-        print(f"save {saved} files in {category}")                      # มารยาท: หน่วงเวลา ไม่ยิงรัว
+        print(f"save {saved} files in {entry}")                      # มารยาท: หน่วงเวลา ไม่ยิงรัว
 
-    return 
+    return
 

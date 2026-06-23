@@ -1,17 +1,38 @@
 import sys
 import math
 from pydantic import BaseModel, Field
-from litellm import completion
 from dotenv import load_dotenv
+from langchain_openrouter import ChatOpenRouter
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 from evaluation.test import TestQuestion, load_tests
-from implementation.answer import answer_question, fetch_context
+from lore_master.core.components import build_retriever, build_chat_model
+from lore_master.rag_chat.rag_chain import RAG_SYSTEM_PROMPT, format_docs
 
 
 load_dotenv(override=True)
 
-MODEL = "gpt-4.1-nano"
-db_name = "vector_db"
+JUDGE_MODEL = "openai/gpt-4.1-nano"  # cheap judge model, routed through OpenRouter
+
+
+def fetch_context(question: str) -> list:
+    """Retrieve the top-k context documents for a question."""
+    return build_retriever().invoke(question)
+
+
+def answer_question(question: str) -> tuple[str, list]:
+    """Answer a standalone question using the project's retriever + chat model."""
+    docs = fetch_context(question)
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", RAG_SYSTEM_PROMPT),
+            ("human", "Context:\n{context}\n\nQuestion: {question}"),
+        ]
+    )
+    chain = prompt | build_chat_model() | StrOutputParser()
+    answer = chain.invoke({"context": format_docs(docs), "question": question})
+    return answer, docs
 
 
 class RetrievalEval(BaseModel):
@@ -152,10 +173,11 @@ Provide detailed feedback and scores from 1 (very poor) to 5 (ideal) for each di
         },
     ]
 
-    # Call LLM judge with structured outputs (async)
-    judge_response = completion(model=MODEL, messages=judge_messages, response_format=AnswerEval)
-
-    answer_eval = AnswerEval.model_validate_json(judge_response.choices[0].message.content)
+    # Call LLM judge with structured outputs
+    judge = ChatOpenRouter(model=JUDGE_MODEL, temperature=0, max_retries=3).with_structured_output(
+        AnswerEval
+    )
+    answer_eval = judge.invoke(judge_messages)
 
     return answer_eval, generated_answer, retrieved_docs
 

@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from pydantic import BaseModel, Field
 
-TEST_FILE = str(Path(__file__).parent / "tests.jsonl")
+TEST_DIR = Path(__file__).parent
 
 
 class TestQuestion(BaseModel):
@@ -14,10 +14,10 @@ class TestQuestion(BaseModel):
     category: str = Field(description="Question category (e.g., direct_fact, spanning, temporal)")
 
 
-def load_tests() -> list[TestQuestion]:
-    """Load test questions from JSONL file."""
+def load_tests(filename: str = "tests.jsonl") -> list[TestQuestion]:
+    """Load test questions from a JSONL file in this directory."""
     tests = []
-    with open(TEST_FILE, "r", encoding="utf-8") as f:
+    with open(TEST_DIR / filename, "r", encoding="utf-8") as f:
         for line in f:
             data = json.loads(line.strip())
             tests.append(TestQuestion(**data))

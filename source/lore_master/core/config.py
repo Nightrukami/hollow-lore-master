@@ -12,8 +12,11 @@ class Settings:
     max_tokens: int = 1024
     temperature: float = 0.7
     retrival_k: int = 4                          # number of chunks to retrieve
-    lore_categories: tuple = ("Category:Lore", "Category:NPCs_(Hollow_Knight)",
-                                 "Category:Areas_(Hollow_Knight)") # fetched wiki pages live here
+    lore_categories: tuple = ("Hollow_Knight_(game)"
+        "Category:Lore", "Category:NPCs_(Hollow_Knight)", "Category:Enemies_(Hollow_Knight)",
+                                 "Category:Areas_(Hollow_Knight)", "Category:Areas_(Silksong)", 
+                                 "Category:Items_(Hollow_Knight)", "Knight", ""
+                                 ) # fetched wiki pages live here
     knowlede_dir: str = "data/knowledge-base"
     persist_dir: str = "data/vector_db"
     collection_name: str = "hollow_knight"
