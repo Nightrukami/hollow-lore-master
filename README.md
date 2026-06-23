@@ -69,8 +69,10 @@ python scripts/run_fetch_ingest.py
 ```
 
 This:
-1. Fetches pages from the categories in `Settings.lore_categories` and saves clean
-   `.md` files into `data/knowledge-base/`.
+1. Crawls the wiki recursively starting from `fetch_wiki.ROOT_CATEGORY` (every
+   sub-category found along the way is followed too) and saves clean `.md`
+   files into `data/knowledge-base/`, mirroring the category hierarchy as
+   nested folders. Pages already saved from a previous run are skipped.
 2. Splits them into chunks, embeds them, and (re)builds the Chroma store at
    `data/vector_db/`.
 
